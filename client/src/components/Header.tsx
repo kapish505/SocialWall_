@@ -18,48 +18,40 @@ export function Header({ walletAddress, onConnectWallet, onOpenProfile }: Header
     <header className="sticky top-0 z-50 w-full backdrop-blur-lg bg-background/70 border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 md:h-20 items-center justify-between gap-4">
-          <Link href="/">
-            <a
-              className="flex items-center gap-2 hover-elevate active-elevate-2 rounded-md px-3 py-2 transition-transform"
-              data-testid="link-home"
-            >
-              <div className="w-8 h-8 rounded-md bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">W3</span>
-              </div>
-              <span className="font-bold text-lg hidden sm:inline">Web3 Social</span>
-            </a>
+          <Link href="/" className="flex items-center gap-2 hover-elevate active-elevate-2 rounded-md px-3 py-2 transition-transform" data-testid="link-home">
+            <div className="w-8 h-8 rounded-md bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
+              <span className="text-primary-foreground font-bold text-sm">W3</span>
+            </div>
+            <span className="font-bold text-lg hidden sm:inline">Web3 Social</span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-1">
-            <Link href="/">
-              <a
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors hover-elevate active-elevate-2 ${
-                  location === "/" ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                }`}
-                data-testid="link-nav-home"
-              >
-                Home
-              </a>
+            <Link
+              href="/"
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors hover-elevate active-elevate-2 ${
+                location === "/" ? "bg-accent text-accent-foreground" : "text-muted-foreground"
+              }`}
+              data-testid="link-nav-home"
+            >
+              Home
             </Link>
-            <Link href="/wall">
-              <a
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors hover-elevate active-elevate-2 ${
-                  location === "/wall" ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                }`}
-                data-testid="link-nav-wall"
-              >
-                Social Wall
-              </a>
+            <Link
+              href="/wall"
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors hover-elevate active-elevate-2 ${
+                location === "/wall" ? "bg-accent text-accent-foreground" : "text-muted-foreground"
+              }`}
+              data-testid="link-nav-wall"
+            >
+              Social Wall
             </Link>
-            <Link href="/about">
-              <a
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors hover-elevate active-elevate-2 ${
-                  location === "/about" ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                }`}
-                data-testid="link-nav-about"
-              >
-                About
-              </a>
+            <Link
+              href="/about"
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors hover-elevate active-elevate-2 ${
+                location === "/about" ? "bg-accent text-accent-foreground" : "text-muted-foreground"
+              }`}
+              data-testid="link-nav-about"
+            >
+              About
             </Link>
           </nav>
 

@@ -10,12 +10,17 @@ import {
   Timestamp,
   type Unsubscribe,
 } from "firebase/firestore";
-import { db } from "./firebase";
+import { db, isConfigured } from "./firebase";
 import type { Post, InsertPost } from "@shared/schema";
 
 const POSTS_COLLECTION = "posts";
 
 export async function createPost(postData: InsertPost): Promise<void> {
+  if (!isConfigured) {
+    console.warn("Firebase not configured - demo mode active");
+    return Promise.resolve();
+  }
+  
   const docRef = await addDoc(collection(db, POSTS_COLLECTION), {
     message: postData.message,
     address: postData.address.toLowerCase(),
@@ -29,32 +34,50 @@ export async function createPost(postData: InsertPost): Promise<void> {
 }
 
 export function subscribeToPostsExclude(callback: (posts: Post[]) => void): Unsubscribe {
+  if (!isConfigured) {
+    console.warn("Firebase not configured - no real-time updates available");
+    callback([]);
+    return () => {};
+  }
+
   const q = query(
     collection(db, POSTS_COLLECTION),
     orderBy("timestamp", "desc")
   );
 
-  return onSnapshot(q, (snapshot) => {
-    const posts: Post[] = snapshot.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        message: data.message,
-        address: data.address,
-        timestamp: data.timestamp,
-        likes: data.likes || 0,
-        dislikes: data.dislikes || 0,
-        likedBy: data.likedBy || [],
-        dislikedBy: data.dislikedBy || [],
-        signature: data.signature,
-        ensName: data.ensName,
-      };
-    });
-    callback(posts);
-  });
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const posts: Post[] = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          message: data.message,
+          address: data.address,
+          timestamp: data.timestamp,
+          likes: data.likes || 0,
+          dislikes: data.dislikes || 0,
+          likedBy: data.likedBy || [],
+          dislikedBy: data.dislikedBy || [],
+          signature: data.signature,
+          ensName: data.ensName,
+        };
+      });
+      callback(posts);
+    },
+    (error) => {
+      console.error("Firestore subscription error:", error);
+      callback([]);
+    }
+  );
 }
 
 export async function toggleLike(postId: string, userAddress: string): Promise<void> {
+  if (!isConfigured) {
+    console.warn("Firebase not configured - demo mode active");
+    return Promise.resolve();
+  }
+
   const postRef = doc(db, POSTS_COLLECTION, postId);
   const normalizedAddress = userAddress.toLowerCase();
 
@@ -99,6 +122,11 @@ export async function toggleLike(postId: string, userAddress: string): Promise<v
 }
 
 export async function toggleDislike(postId: string, userAddress: string): Promise<void> {
+  if (!isConfigured) {
+    console.warn("Firebase not configured - demo mode active");
+    return Promise.resolve();
+  }
+
   const postRef = doc(db, POSTS_COLLECTION, postId);
   const normalizedAddress = userAddress.toLowerCase();
 

@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { useLocation } from "wouter";
 import { Wallet, Zap, Shield, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,6 +10,8 @@ interface HomePageProps {
 }
 
 export function HomePage({ onConnectWallet, isConnected }: HomePageProps) {
+  const [, navigate] = useLocation();
+
   return (
     <div className="flex-1">
       <section className="relative min-h-[calc(100vh-5rem)] flex items-center justify-center overflow-hidden">
@@ -33,24 +35,36 @@ export function HomePage({ onConnectWallet, isConnected }: HomePageProps) {
 
               <div className="flex flex-wrap gap-4">
                 {isConnected ? (
-                  <Link href="/wall">
-                    <Button size="lg" className="gap-2 text-lg px-8 py-6" data-testid="button-view-wall">
-                      <Zap className="h-5 w-5" />
-                      View Social Wall
-                    </Button>
-                  </Link>
+                  <Button
+                    size="lg"
+                    onClick={() => navigate("/wall")}
+                    className="gap-2 text-lg px-8 py-6"
+                    data-testid="button-view-wall"
+                  >
+                    <Zap className="h-5 w-5" />
+                    View Social Wall
+                  </Button>
                 ) : (
-                  <Button size="lg" onClick={onConnectWallet} className="gap-2 text-lg px-8 py-6" data-testid="button-hero-connect">
+                  <Button
+                    size="lg"
+                    onClick={onConnectWallet}
+                    className="gap-2 text-lg px-8 py-6"
+                    data-testid="button-hero-connect"
+                  >
                     <Wallet className="h-5 w-5" />
                     Connect Wallet
                   </Button>
                 )}
                 
-                <Link href="/about">
-                  <Button variant="outline" size="lg" className="text-lg px-8 py-6" data-testid="button-learn-more">
-                    Learn More
-                  </Button>
-                </Link>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => navigate("/about")}
+                  className="text-lg px-8 py-6"
+                  data-testid="button-learn-more"
+                >
+                  Learn More
+                </Button>
               </div>
             </div>
 

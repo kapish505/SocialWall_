@@ -1,3 +1,4 @@
+import { Link } from "wouter";
 import { Github, Twitter, Globe } from "lucide-react";
 
 export function Footer() {
@@ -21,19 +22,19 @@ export function Footer() {
             <h3 className="font-semibold mb-4">Quick Links</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
-                <a href="/" className="hover:text-foreground transition-colors" data-testid="link-footer-home">
+                <Link href="/" className="hover:text-foreground transition-colors" data-testid="link-footer-home">
                   Home
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/wall" className="hover:text-foreground transition-colors" data-testid="link-footer-wall">
+                <Link href="/wall" className="hover:text-foreground transition-colors" data-testid="link-footer-wall">
                   Social Wall
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/about" className="hover:text-foreground transition-colors" data-testid="link-footer-about">
+                <Link href="/about" className="hover:text-foreground transition-colors" data-testid="link-footer-about">
                   About Us
-                </a>
+                </Link>
               </li>
             </ul>
           </div>

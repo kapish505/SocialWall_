@@ -14,6 +14,7 @@ import { SocialWallPage } from "@/pages/SocialWallPage";
 import { AboutPage } from "@/pages/AboutPage";
 import { connectWallet, signMessage } from "@/lib/wallet";
 import { createPost, subscribeToPostsExclude, toggleLike, toggleDislike } from "@/lib/firestore";
+import { isConfigured } from "@/lib/firebase";
 import type { Post, WalletConnection } from "@shared/schema";
 
 function AppContent() {
@@ -26,12 +27,15 @@ function AppContent() {
   const [votingPostId, setVotingPostId] = useState<string>();
 
   useEffect(() => {
-    const unsubscribe = subscribeToPostsExclude((newPosts) => {
-      setPosts(newPosts);
+    if (isConfigured) {
+      const unsubscribe = subscribeToPostsExclude((newPosts) => {
+        setPosts(newPosts);
+        setIsLoading(false);
+      });
+      return () => unsubscribe();
+    } else {
       setIsLoading(false);
-    });
-
-    return () => unsubscribe();
+    }
   }, []);
 
   const handleConnectWallet = async () => {
@@ -83,11 +87,27 @@ function AppContent() {
         }
       }
 
-      await createPost({
-        message,
-        address: wallet.address,
-        signature,
-      });
+      if (isConfigured) {
+        await createPost({
+          message,
+          address: wallet.address,
+          signature,
+        });
+      } else {
+        const newPost: Post = {
+          id: `post-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          message,
+          address: wallet.address.toLowerCase(),
+          timestamp: Date.now(),
+          likes: 0,
+          dislikes: 0,
+          likedBy: [],
+          dislikedBy: [],
+          ensName: wallet.ensName,
+          signature,
+        };
+        setPosts(prev => [newPost, ...prev]);
+      }
 
       toast({
         title: "Post created",
@@ -97,7 +117,7 @@ function AppContent() {
       console.error("Error creating post:", error);
       toast({
         title: "Failed to create post",
-        description: error.message || "Something went wrong. Make sure Firebase is configured.",
+        description: error.message || "Something went wrong",
         variant: "destructive",
       });
     } finally {
@@ -109,9 +129,43 @@ function AppContent() {
     if (!wallet?.address || votingPostId) return;
     
     setVotingPostId(postId);
-    
+
     try {
-      await toggleLike(postId, wallet.address);
+      if (isConfigured) {
+        await toggleLike(postId, wallet.address);
+      } else {
+        setPosts(prev => prev.map(post => {
+          if (post.id !== postId) return post;
+
+          const userAddress = wallet.address!.toLowerCase();
+          const hasLiked = post.likedBy.includes(userAddress);
+          const hasDisliked = post.dislikedBy.includes(userAddress);
+
+          if (hasLiked) {
+            return {
+              ...post,
+              likes: post.likes - 1,
+              likedBy: post.likedBy.filter(addr => addr !== userAddress),
+            };
+          }
+
+          if (hasDisliked) {
+            return {
+              ...post,
+              likes: post.likes + 1,
+              dislikes: post.dislikes - 1,
+              likedBy: [...post.likedBy, userAddress],
+              dislikedBy: post.dislikedBy.filter(addr => addr !== userAddress),
+            };
+          }
+
+          return {
+            ...post,
+            likes: post.likes + 1,
+            likedBy: [...post.likedBy, userAddress],
+          };
+        }));
+      }
     } catch (error: any) {
       console.error("Error toggling like:", error);
       toast({
@@ -130,7 +184,41 @@ function AppContent() {
     setVotingPostId(postId);
 
     try {
-      await toggleDislike(postId, wallet.address);
+      if (isConfigured) {
+        await toggleDislike(postId, wallet.address);
+      } else {
+        setPosts(prev => prev.map(post => {
+          if (post.id !== postId) return post;
+
+          const userAddress = wallet.address!.toLowerCase();
+          const hasLiked = post.likedBy.includes(userAddress);
+          const hasDisliked = post.dislikedBy.includes(userAddress);
+
+          if (hasDisliked) {
+            return {
+              ...post,
+              dislikes: post.dislikes - 1,
+              dislikedBy: post.dislikedBy.filter(addr => addr !== userAddress),
+            };
+          }
+
+          if (hasLiked) {
+            return {
+              ...post,
+              likes: post.likes - 1,
+              dislikes: post.dislikes + 1,
+              likedBy: post.likedBy.filter(addr => addr !== userAddress),
+              dislikedBy: [...post.dislikedBy, userAddress],
+            };
+          }
+
+          return {
+            ...post,
+            dislikes: post.dislikes + 1,
+            dislikedBy: [...post.dislikedBy, userAddress],
+          };
+        }));
+      }
     } catch (error: any) {
       console.error("Error toggling dislike:", error);
       toast({
