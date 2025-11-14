@@ -25,18 +25,30 @@ function AppContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [votingPostId, setVotingPostId] = useState<string>();
+  const [demoMode, setDemoMode] = useState(!isConfigured);
 
   useEffect(() => {
-    if (isConfigured) {
-      const unsubscribe = subscribeToPostsExclude((newPosts) => {
-        setPosts(newPosts);
-        setIsLoading(false);
-      });
+    if (isConfigured && !demoMode) {
+      const unsubscribe = subscribeToPostsExclude(
+        (newPosts) => {
+          setPosts(newPosts);
+          setIsLoading(false);
+        },
+        () => {
+          setDemoMode(true);
+          setIsLoading(false);
+          toast({
+            title: "Demo mode activated",
+            description: "Firestore access denied. Using local state only.",
+            variant: "default",
+          });
+        }
+      );
       return () => unsubscribe();
     } else {
       setIsLoading(false);
     }
-  }, []);
+  }, [demoMode, toast]);
 
   const handleConnectWallet = async () => {
     try {
@@ -87,12 +99,33 @@ function AppContent() {
         }
       }
 
-      if (isConfigured) {
-        await createPost({
-          message,
-          address: wallet.address,
-          signature,
-        });
+      if (isConfigured && !demoMode) {
+        try {
+          await createPost({
+            message,
+            address: wallet.address,
+            signature,
+          });
+        } catch (createError: any) {
+          if (createError.message === "PERMISSION_DENIED") {
+            setDemoMode(true);
+            const newPost: Post = {
+              id: `post-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              message,
+              address: wallet.address.toLowerCase(),
+              timestamp: Date.now(),
+              likes: 0,
+              dislikes: 0,
+              likedBy: [],
+              dislikedBy: [],
+              ensName: wallet.ensName,
+              signature,
+            };
+            setPosts(prev => [newPost, ...prev]);
+          } else {
+            throw createError;
+          }
+        }
       } else {
         const newPost: Post = {
           id: `post-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -111,7 +144,7 @@ function AppContent() {
 
       toast({
         title: "Post created",
-        description: "Your post has been shared with the community",
+        description: demoMode ? "Post saved locally (demo mode)" : "Your post has been shared with the community",
       });
     } catch (error: any) {
       console.error("Error creating post:", error);
@@ -130,41 +163,59 @@ function AppContent() {
     
     setVotingPostId(postId);
 
-    try {
-      if (isConfigured) {
-        await toggleLike(postId, wallet.address);
-      } else {
-        setPosts(prev => prev.map(post => {
-          if (post.id !== postId) return post;
+    const updateLocalState = () => {
+      setPosts(prev => prev.map(post => {
+        if (post.id !== postId) return post;
 
-          const userAddress = wallet.address!.toLowerCase();
-          const hasLiked = post.likedBy.includes(userAddress);
-          const hasDisliked = post.dislikedBy.includes(userAddress);
+        const userAddress = wallet.address!.toLowerCase();
+        const hasLiked = post.likedBy.includes(userAddress);
+        const hasDisliked = post.dislikedBy.includes(userAddress);
 
-          if (hasLiked) {
-            return {
-              ...post,
-              likes: post.likes - 1,
-              likedBy: post.likedBy.filter(addr => addr !== userAddress),
-            };
-          }
+        if (hasLiked) {
+          return {
+            ...post,
+            likes: post.likes - 1,
+            likedBy: post.likedBy.filter(addr => addr !== userAddress),
+          };
+        }
 
-          if (hasDisliked) {
-            return {
-              ...post,
-              likes: post.likes + 1,
-              dislikes: post.dislikes - 1,
-              likedBy: [...post.likedBy, userAddress],
-              dislikedBy: post.dislikedBy.filter(addr => addr !== userAddress),
-            };
-          }
-
+        if (hasDisliked) {
           return {
             ...post,
             likes: post.likes + 1,
+            dislikes: post.dislikes - 1,
             likedBy: [...post.likedBy, userAddress],
+            dislikedBy: post.dislikedBy.filter(addr => addr !== userAddress),
           };
-        }));
+        }
+
+        return {
+          ...post,
+          likes: post.likes + 1,
+          likedBy: [...post.likedBy, userAddress],
+        };
+      }));
+    };
+
+    try {
+      if (isConfigured && !demoMode) {
+        try {
+          await toggleLike(postId, wallet.address);
+        } catch (likeError: any) {
+          if (likeError.message === "PERMISSION_DENIED") {
+            setDemoMode(true);
+            updateLocalState();
+            toast({
+              title: "Demo mode activated",
+              description: "Firestore access denied. Using local state only.",
+              variant: "default",
+            });
+          } else {
+            throw likeError;
+          }
+        }
+      } else {
+        updateLocalState();
       }
     } catch (error: any) {
       console.error("Error toggling like:", error);
@@ -183,41 +234,59 @@ function AppContent() {
     
     setVotingPostId(postId);
 
-    try {
-      if (isConfigured) {
-        await toggleDislike(postId, wallet.address);
-      } else {
-        setPosts(prev => prev.map(post => {
-          if (post.id !== postId) return post;
+    const updateLocalState = () => {
+      setPosts(prev => prev.map(post => {
+        if (post.id !== postId) return post;
 
-          const userAddress = wallet.address!.toLowerCase();
-          const hasLiked = post.likedBy.includes(userAddress);
-          const hasDisliked = post.dislikedBy.includes(userAddress);
+        const userAddress = wallet.address!.toLowerCase();
+        const hasLiked = post.likedBy.includes(userAddress);
+        const hasDisliked = post.dislikedBy.includes(userAddress);
 
-          if (hasDisliked) {
-            return {
-              ...post,
-              dislikes: post.dislikes - 1,
-              dislikedBy: post.dislikedBy.filter(addr => addr !== userAddress),
-            };
-          }
-
-          if (hasLiked) {
-            return {
-              ...post,
-              likes: post.likes - 1,
-              dislikes: post.dislikes + 1,
-              likedBy: post.likedBy.filter(addr => addr !== userAddress),
-              dislikedBy: [...post.dislikedBy, userAddress],
-            };
-          }
-
+        if (hasDisliked) {
           return {
             ...post,
+            dislikes: post.dislikes - 1,
+            dislikedBy: post.dislikedBy.filter(addr => addr !== userAddress),
+          };
+        }
+
+        if (hasLiked) {
+          return {
+            ...post,
+            likes: post.likes - 1,
             dislikes: post.dislikes + 1,
+            likedBy: post.likedBy.filter(addr => addr !== userAddress),
             dislikedBy: [...post.dislikedBy, userAddress],
           };
-        }));
+        }
+
+        return {
+          ...post,
+          dislikes: post.dislikes + 1,
+          dislikedBy: [...post.dislikedBy, userAddress],
+        };
+      }));
+    };
+
+    try {
+      if (isConfigured && !demoMode) {
+        try {
+          await toggleDislike(postId, wallet.address);
+        } catch (dislikeError: any) {
+          if (dislikeError.message === "PERMISSION_DENIED") {
+            setDemoMode(true);
+            updateLocalState();
+            toast({
+              title: "Demo mode activated",
+              description: "Firestore access denied. Using local state only.",
+              variant: "default",
+            });
+          } else {
+            throw dislikeError;
+          }
+        }
+      } else {
+        updateLocalState();
       }
     } catch (error: any) {
       console.error("Error toggling dislike:", error);
