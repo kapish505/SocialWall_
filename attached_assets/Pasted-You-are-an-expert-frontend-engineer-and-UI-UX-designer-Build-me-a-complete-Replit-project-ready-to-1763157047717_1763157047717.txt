@@ -1,0 +1,82 @@
+You are an expert frontend engineer and UI/UX designer. Build me a complete Replit project (ready to run) for a polished, professional Web3 Wallet–Based Social Wall. The site must be modern, responsive, accessible, and interactive, and must include the following:
+Project summary
+A multi-page single-site web app (HTML/CSS/JS) that lets users connect with MetaMask, post messages, and like ordislike posts (single vote per user per post). Posts are stored in Firebase Firestore and the feed updates in real time. The app should look production-quality and be easy to demo.
+Required pages & UI
+1. Homepage — hero section, short product pitch, call-to-action (Connect Wallet / View Wall), key features (realtime, secure, wallet-based identity), appealing hero illustration or gradient, CTA buttons.
+2. Social Wall page — the main feed where users view posts, connect wallet, create posts, like/dislike, see timestamps, wallet address (shortened) and optional ENS if available. Each post should show both like and dislike buttons and counts. UI should prevent user from liking and disliking the same post simultaneously.
+3. About Us / Team page — short project description, purpose, built-for-hackathon note, contact links.
+4. Profile modal / small drawer — when clicking the wallet address, show a small user card with full address, ENS (if exists), list of user's posts, logout/disconnect.
+5. Header + Footer — responsive nav, dark/light theme toggle, and a footer with links and credits.
+Visual & UX guidelines
+* Modern, minimal, slightly glassmorphism / neumorphism aesthetic. Nice gradients, subtle shadows, smooth micro-interactions (hover, focus, button press, real-time feed animations).
+* Mobile-first, responsive layout (desktop two-column feed or center column; mobile single-column).
+* Use clean typography and spacing; include an avatar placeholder for each wallet (generated initials or identicon).
+* Use CSS-only animation for micro-interactions; minimal external CSS frameworks. If a small utility is needed, prefer a single CDN import (e.g., Google Fonts).
+Tech stack & libraries
+* Plain HTML, CSS, modern JavaScript (ES modules). No bundler required.
+* MetaMask wallet connect via window.ethereum and optionally ethers.js from CDN.
+* Firebase Firestore (modular v10+ SDK via CDN imports). No server.
+* Optionally use a tiny client-side identicon/initials generator (JS function) for avatars.
+* Do not use backend servers; everything is client + Firestore.
+Firestore data model
+* Collection: posts
+    * doc fields: message (string), address (lowercase string), timestamp (number), likes (number), dislikes (number), likedBy (array of lowercase addresses), dislikedBy (array of lowercase addresses), optionally signature (string) when using message-signing proof.
+* Keep an ordered feed by timestamp.
+Like / Dislike behaviour (important)
+* Implement toggling logic so:
+    * If a user has not voted → they can like or dislike (increments count & adds address to corresponding array).
+    * If a user likes and then clicks like again → removes their like (decrement & remove address).
+    * If a user likes and then clicks dislike → remove like, decrement like count, then add dislike (increment & add address). And vice versa.
+* Use Firestore transactions (runTransaction) to prevent race conditions and inconsistent counts.
+* Store likedBy and dislikedBy arrays in the post document to enforce one vote per address.
+Wallet login & optional verification
+* Implement MetaMask connect (eth_requestAccounts). Show shortened address in header.
+* OPTIONAL (preferred): Add a message-signing step when user first connects to prove ownership. Use signMessagein ethers or window.ethereum and store the signature alongside a post. (Explain in a README that Firestore rules cannot verify signatures server-side without Cloud Functions; message signing is mostly a UX/intent proof in this frontend-only demo.)
+Firestore rules (for the Replit README)
+* Provide suggested rules for a hackathon demo (test mode) and also an example of stricter rules that require writes only when a signature is present and the message begins with a known prefix — explain limitations (cannot fully verify on client-only project).
+* Include a short note on moving to production: use Firebase Authentication or Cloud Functions to verify signatures server-side and secure writes.
+Files & folder structure (exact)
+
+/ (root)
+  index.html            --> homepage + client router to pages
+  wall.html             --> social wall page (or index can route /#wall)
+  about.html            --> about / team page
+  css/
+    style.css
+  js/
+    app.js              --> main app bootstrap + routing
+    wallet.js           --> wallet connect & signing helpers
+    firestore.js        --> firebase init & helper functions (addPost, toggleVote)
+    ui.js               --> DOM render helpers (renderPost etc)
+  assets/
+    logo.svg
+    hero-illustration.svg (or use css gradient)
+  README.md
+Replit deliverables (what I want Claude to produce)
+* All files above with fully working code (no TODOs or placeholders). Replace Firebase config with clear placeholders and a comment where to paste the real config.
+* Clear instructions in README on:
+    * How to add Firebase config (exact place in file)
+    * How to create Firestore database (Native mode) and start test rules
+    * How to run the Replit (open index.html or use the Replit web server)
+    * How to test likes/dislikes locally with multiple browser windows
+    * Notes on production hardening and verifying signatures
+* Nice UI assets (SVG icons) or inline SVG markup for icons (like, dislike, comment) included in the repo. No external image downloads required.
+* Accessibility: make interactive controls keyboard-focusable and labelled.
+Extra polish (bonus, but include if possible)
+* Dark / light theme toggle persisted in localStorage.
+* ENS lookup (optional): if ENS library is too heavy, skip; otherwise add a note how to add it.
+* Leaderboard or top posters section on homepage.
+* Small animated toast notifications for success/error.
+Testing & safety
+* Use Firestore transactions for votes to avoid race conditions.
+* Show helpful error messages for common MetaMask errors (not installed, wrong chain, user rejected).
+* Do not ever request or log private keys.
+Tone & code style
+* Clean, commented, beginner-friendly code (brief comments allowed). Use ES6+ but avoid frameworks.
+* Use modular files (as listed).
+* Include inline comments where security decisions are made (e.g., why signatures are optional).
+other things 
+
+1. A complete README.md with step-by-step setup and demo instructions.
+2. Example Firestore security rules for test and for suggested stricter rules.
+
